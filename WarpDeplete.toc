@@ -16,3 +16,4 @@ Options.lua
 Display.lua
 Events.lua
 Comms.lua
+Records.lua

@@ -119,17 +119,25 @@ function WarpDeplete:EnableDemoMode()
   self:ResetState()
   self.challengeState.demoModeActive = true
 
+  demoLevel = 30
+  demoAffixes = {L["Tyrannical"], L["Bolstering"], L["Spiteful"], L["Thundering"]}
+  self:SetKeyDetails(demoLevel, demoAffixes)
+
   local objectives = {}
   for i = 1, 5 do
     objectives[i] = { name = L["Test Boss Name"] .. " " .. i }
 
     if i < 3 then
       objectives[i].time = 520 * i
+      local randomDiff = math.random(-55, 55)
+      objectives[i].cBestTime = objectives[i].time + randomDiff
+      objectives[i].wBestTime = objectives[i].time + randomDiff
+      objectives[i].aBestTime = objectives[i].time + randomDiff
     end
   end
+  objectives[3].time = 2080
 
   self:SetObjectives(objectives)
-  self:SetKeyDetails(30, {L["Tyrannical"], L["Bolstering"], L["Spiteful"], L["Thundering"]})
 
   self:SetTimerLimit(35 * 60)
   self:SetTimerRemaining(20 * 60)

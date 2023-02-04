@@ -567,6 +567,10 @@ end
 function WarpDeplete:UpdateObjectivesDisplay()
   local completionColor = self.db.profile.completedObjectivesColor
   local alignStart = self.db.profile.alignBossClear == "start"
+  local objectivesFormat = self.db.profile.objectivesFormat
+  local customObjectivesFormat = self.db.profile.customObjectivesFormat
+  local objectiveOverTimeColor = self.db.profile.objectiveOverTimeColor
+  local objectiveUnderTimeColor = self.db.profile.objectiveUnderTimeColor
 
   -- Clear existing objective list
   for i = 1, 5 do
@@ -574,21 +578,16 @@ function WarpDeplete:UpdateObjectivesDisplay()
   end
 
   for i, boss in ipairs(self.objectivesState) do
-    local objectiveStr = boss.name
-
-    if boss.time ~= nil then
-      if boss.time > 0 then
-        local completionTimeStr = Util.formatTime(boss.time)
-
-        if alignStart then
-          objectiveStr = "[" .. completionTimeStr .. "] " .. objectiveStr
-        else
-          objectiveStr =  objectiveStr .. " [" .. completionTimeStr .. "]"
-        end
-      end
-
-      objectiveStr = "|c" .. completionColor .. objectiveStr .. "|r"
-    end
+    objectiveStr = Util.formatObjectiveText(
+      completionColor,
+      boss.name,
+      objectivesFormat,
+      customObjectivesFormat,
+      boss.time,
+      boss.cBestTime,
+      objectiveOverTimeColor,
+      objectiveUnderTimeColor
+    )
 
     self.frames.root.objectiveTexts[i]:SetText(objectiveStr)
   end

@@ -5,6 +5,7 @@ local defaults = {
   global = {
     DEBUG = false,
     mdtAlertShown = false,
+    bestTimes = {}
   },
 
   profile = {
@@ -22,6 +23,8 @@ local defaults = {
     customForcesFormat = ":percent:",
     currentPullFormat = "(+:percent:)",
     customCurrentPullFormat = "(+:percent:)",
+    objectivesFormat = ":diff: [:time:] :name:",
+    customObjectivesFormat = ":diff: [:time:] :name:",
 
     showTooltipCount = true,
     tooltipCountFormat = "+:count: / :percent:",
@@ -29,6 +32,9 @@ local defaults = {
 
     showDeathsTooltip = true,
     deathLogStyle = "time",
+
+    showRecordDiffs = true,
+    recordDiffType = "combo",
 
     -- Font families
     deathsFont = "Expressway",
@@ -63,6 +69,8 @@ local defaults = {
     completedForcesColor = "FF00FF24",
     objectivesColor = "FFFFFFFF",
     completedObjectivesColor = "FF00FF24",
+    objectiveOverTimeColor = "FF9E5C",
+    objectiveUnderTimeColor = "3B8CFF",
 
     -- Bar textures
     bar1Texture = "ElvUI Blank",
@@ -406,7 +414,8 @@ function WarpDeplete:InitOptions()
             desc = L["Use the following tags to set your custom format"] .. ":"
               .. "\n- :percent: " .. L["Shows the current forces percentage (e.g. 82.52%)"]
               .. "\n- :count: " .. L["Shows the current forces count (e.g. 198)"]
-              .. "\n- :totalcount: " .. L["Shows the total forces count (e.g. 240)"],
+              .. "\n- :totalcount: " .. L["Shows the total forces count (e.g. 240)"]
+              .. "\n- :remaining: " .. L["Shows the remaining forces count (e.g. 32)"],
             multiline = false,
             width = 2,
             hidden = function() return WarpDeplete.db.profile.forcesFormat ~= ":custom:" end,
@@ -564,7 +573,7 @@ function WarpDeplete:InitOptions()
           color(L["Key color"], "keyColor", "UpdateLayout"),
 
           lineBreak(),
-          
+
           font(L["Key details font"], "keyDetailsFont", "UpdateLayout"),
           range(L["Key details font size"], "keyDetailsFontSize", "UpdateLayout"),
           fontFlags(L["Key details font flags"], "keyDetailsFontFlags", "UpdateLayout"),
@@ -604,6 +613,46 @@ function WarpDeplete:InitOptions()
           color(L["Objectives color"], "objectivesColor", "UpdateLayout"),
           color(L["Completed objective color"], "completedObjectivesColor", "UpdateLayout"),
         }),
+
+        group(L["Objectives Display"], true, {
+          {
+            type = "select",
+            name = L["Objectives text format"],
+            desc = L["Choose how your objectives progress will be displayed"],
+            sorting = {
+              ":diff: [:time:] :name:",
+              ":name: [:time:] :diff:",
+              ":custom:",
+            },
+            values = {
+              [":diff: [:time:] :name:"] = "-1:23 [4:56] Boss Name",
+              [":name: [:time:] :diff:"] = "Boss Name [4:56] -1:23",
+              [":custom:"] = L["Custom"],
+            },
+            get = function(info) return WarpDeplete.db.profile.objectivesFormat end,
+            set = function(info, value)
+              WarpDeplete.db.profile.objectivesFormat = value
+              WarpDeplete:UpdateLayout()
+            end
+          },
+          lineBreak(function() return WarpDeplete.db.profile.objectivesFormat == ":custom:" end, 2),
+          {
+            type = "input",
+            name = L["Custom objectives text format"],
+            desc = L["Use the following tags to set your custom format"] .. ":"
+              .. "\n- :diff: " .. L["Shows the difference between your completed time vs your record time"]
+              .. "\n- :time: " .. L["Shows the completed objective time"]
+              .. "\n- :name: " .. L["Shows the objective name"],
+            multiline = false,
+            width = 2,
+            hidden = function() return WarpDeplete.db.profile.objectivesFormat ~= ":custom:" end,
+            get = function(info) return WarpDeplete.db.profile.customObjectivesFormat end,
+            set = function(info, value)
+              WarpDeplete.db.profile.customObjectivesFormat = value
+              WarpDeplete:UpdateLayout()
+            end
+          },
+        }),
       }, { order = 4 }),
 
       bars = group(L["Bars"], false, {
@@ -637,6 +686,50 @@ function WarpDeplete:InitOptions()
           color(L["Current pull bar color"], "forcesOverlayTextureColor", "UpdateLayout"),
         })
       }, { order = 5 }),
+
+      records = group(L["Records"], false, {
+        group(L["General"], true, {
+          {
+            type = "toggle",
+            name = L["Show difference from best times"],
+            desc = L["Show the difference from the previous best time for this completed objective"],
+            get = function(info) return WarpDeplete.db.profile.showRecordDiffs end,
+            set = function(info, value) WarpDeplete.db.profile.showRecordDiffs = value end,
+            width = 3 / 2,
+          },
+          {
+            type = "select",
+            name = L["Record type"],
+            desc = L["Choose which record type to compare with (full affix combo, fort/tyr only, or all-time)"],
+            sorting = {
+              "combo",
+              "weekly",
+              "alltime"
+            },
+            values = {
+              ["combo"] = L["Specific affix combo"],
+              ["weekly"] = L["All fortified / tyrannical records"],
+              ["alltime"] = L["All records"]
+            },
+            hidden = function() return not WarpDeplete.db.profile.showRecordDiffs end,
+            get = function(info) return WarpDeplete.db.profile.recordDiffType end,
+            set = function(info, value) WarpDeplete.db.profile.recordDiffType = value end,
+            width = 3 / 2,
+          },
+          {
+            type = "execute",
+            name = L["Delete All Records"],
+            desc = L["Delete all records for all objectives"],
+            confirm = true,
+            confirmText = L["Really delete all records? This cannot be undone."],
+            func = function() WarpDeplete.db.global.bestTimes = {} end
+          }
+        }),
+        group(L["Colors"], true, {
+          color(L["Over time color"], "objectiveOverTimeColor", "UpdateObjectivesDisplay"),
+          color(L["Under time color"], "objectiveUnderTimeColor", "UpdateObjectivesDisplay"),
+        })
+      }, { order = 6 }),
     }
   }
 

@@ -16,11 +16,13 @@ function Util.formatForcesText(
   local percentText = ("%.2f"):format(currentPercent)
   local countText = ("%d"):format(currentCount)
   local totalCountText = ("%d"):format(totalCount)
+  local remainingCountText = ("%d"):format(totalCount - currentCount)
   local result = forcesFormat ~= ":custom:" and forcesFormat or customForcesFormat
 
   result = gsub(result, ":percent:", percentText .. "%%")
   result = gsub(result, ":count:", countText)
   result = gsub(result, ":totalcount:", totalCountText)
+  result = gsub(result, ":remaining:", remainingCountText)
 
   if pullCount > 0 then
     local pullPercent = (pullCount / totalCount) * 100
@@ -44,6 +46,52 @@ function Util.formatForcesText(
   return result or ""
 end
 
+function Util.formatObjectiveText(
+  completionColor,
+  name,
+  objectivesFormat,
+  customObjectivesFormat,
+  time,
+  bestTime,
+  overTimeColor,
+  underTimeColor
+)
+  local result = name
+  if time ~= nil then
+    if time > 0 then
+      result = objectivesFormat ~= ":custom:" and objectivesFormat or customObjectivesFormat
+      local completionTimeStr = Util.formatTime(time)
+      local bestTimeDiffSign = "+"
+      local bestTimeDiff
+      local bestTimeDiffColor = overTimeColor
+
+      if bestTime == nil then
+        bestTimeDiff = nil
+        bestTimeDiffSign = "New!"
+        bestTimeDiffColor = "FFB1B1B1"
+      else
+        bestTimeDiff = time - bestTime
+        if bestTimeDiff < 0 then
+          bestTimeDiff = bestTimeDiff * -1
+          bestTimeDiffSign = "-"
+          bestTimeDiffColor = underTimeColor
+        end
+      end
+      local bestTimeDiffStr = bestTimeDiff ~= nil and Util.formatTime(bestTimeDiff) or ""
+      bestTimeDiffStr = "|c" .. bestTimeDiffColor .. bestTimeDiffSign .. bestTimeDiffStr .. "|r"
+
+      local nameStr = "|c" .. completionColor .. name .. "|r"
+
+      result = gsub(result, ":name:", nameStr)
+      result = gsub(result, ":time:", completionTimeStr)
+      result = gsub(result, ":diff:", bestTimeDiffStr)
+
+    end
+  end
+
+  return result
+end
+
 function Util.getBarPercent_OnUpdate(bar, percent)
   if bar == 3 then
     return (percent >= 0.6 and 1.0) or (percent * (10 / 6))
@@ -61,7 +109,7 @@ function Util.formatDeathText(deaths)
   local deathText = "" .. deaths
   if deaths == 1 then deathText = deathText .. " " .. L["Deaths"] .. " "
   else deathText = deathText .. " " .. L["Deaths"] .. " " end
-  
+
   local timeAddedText = (
     (timeAdded == 0 and "") or
     (timeAdded < 60 and "(+" .. timeAdded .. "s)") or
@@ -91,7 +139,7 @@ function Util.formatDeathTimeMinutes(time)
 end
 
 function Util.hexToRGB(hex)
-	if string.len(hex) == 8 then
+  if string.len(hex) == 8 then
     return tonumber("0x" .. hex:sub(3, 4)) / 255,
       tonumber("0x" .. hex:sub(5, 6)) / 255,
       tonumber("0x" .. hex:sub(7, 8)) / 255,
@@ -104,10 +152,10 @@ function Util.hexToRGB(hex)
 end
 
 function Util.rgbToHex(r, g, b, a)
-	r = math.ceil(255 * r)
-	g = math.ceil(255 * g)
-	b = math.ceil(255 * b)
-	if not a then
+  r = math.ceil(255 * r)
+  g = math.ceil(255 * g)
+  b = math.ceil(255 * b)
+  if not a then
     return string.format("FF%02x%02x%02x", r, g, b)
   end
 
