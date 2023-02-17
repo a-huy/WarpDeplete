@@ -65,7 +65,10 @@ function Util.formatObjectiveText(
       local bestTimeDiff
       local bestTimeDiffColor = overTimeColor
 
-      if bestTime == nil then
+      if bestTime == -1 then
+        bestTimeDiff = ""
+        bestTimeDiffSign = ""
+      elseif bestTime == nil then
         bestTimeDiff = nil
         bestTimeDiffSign = "New!"
         bestTimeDiffColor = "FFB1B1B1"
@@ -77,7 +80,11 @@ function Util.formatObjectiveText(
           bestTimeDiffColor = underTimeColor
         end
       end
-      local bestTimeDiffStr = bestTimeDiff ~= nil and Util.formatTime(bestTimeDiff) or ""
+      local bestTimeDiffStr = ""
+      if bestTimeDiff ~= nil and bestTimeDiff ~= "" then
+        bestTimeDiffStr = Util.formatTime(bestTimeDiff)
+      end
+      -- local bestTimeDiffStr = bestTimeDiff ~= nil and Util.formatTime(bestTimeDiff) or ""
       bestTimeDiffStr = "|c" .. bestTimeDiffColor .. bestTimeDiffSign .. bestTimeDiffStr .. "|r"
 
       local nameStr = "|c" .. completionColor .. name .. "|r"

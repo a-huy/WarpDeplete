@@ -7,6 +7,18 @@ function WarpDeplete:GetRecordTableKey(level, affixes, name, order)
   return bestTimeKey
 end
 
+function WarpDeplete:ShouldStoreRecord(level)
+  local globalSwitch = self.db.profile.showRecordDiffs
+  if not globalSwitch then return false end
+
+  local minLevel = self.db.profile.minLevelStoreRecord
+  local maxLevel = self.db.profile.maxLevelStoreRecord
+
+  if level < minLevel or level > maxLevel then return false end
+
+  return true
+end
+
 -- orderNum is specified to accomodate for different kill orders
 function WarpDeplete:GetRecordForObjective(level, affixes, name, order)
   bestTimeKey = self:GetRecordTableKey(level, affixes, name, order)
@@ -36,8 +48,8 @@ function WarpDeplete:UpdateRecordForObjective(level, affixes, name, order, curre
     name,
     order
   )
-  if currentBestTime == nil or time < objectiveBestTime then
-    self:PrintDebug(
+  if objectiveBestTime == nil or time < objectiveBestTime then
+    print(
       "Setting new best time for "
       .. level
       .. " "
@@ -55,6 +67,8 @@ function WarpDeplete:UpdateRecordForObjective(level, affixes, name, order, curre
       time
     )
     return objectiveBestTime
+  elseif currentBestTime == nil then
+    return objectiveBestTime
   else
     return nil
   end
@@ -62,6 +76,6 @@ end
 
 function WarpDeplete:GetNumRecordsStored()
   local count = 0
-  for _ in pairs(self.db.global.bestTimes) do count = count + 1 end
+  for _ in pairs(WarpDeplete.db.global.bestTimes) do count = count + 1 end
   return count
 end

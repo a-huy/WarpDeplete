@@ -571,6 +571,9 @@ function WarpDeplete:UpdateObjectivesDisplay()
   local customObjectivesFormat = self.db.profile.customObjectivesFormat
   local objectiveOverTimeColor = self.db.profile.objectiveOverTimeColor
   local objectiveUnderTimeColor = self.db.profile.objectiveUnderTimeColor
+  local bestTimeType = self.db.profile.recordDiffType
+  local level = self.keyDetailsState.level
+  local didStoreRecord = self:ShouldStoreRecord(level)
 
   -- Clear existing objective list
   for i = 1, 5 do
@@ -578,13 +581,24 @@ function WarpDeplete:UpdateObjectivesDisplay()
   end
 
   for i, boss in ipairs(self.objectivesState) do
+    local bestTime
+    if not didStoreRecord then
+      bestTime = -1
+    elseif bestTimeType == "weekly" then
+      bestTime = boss.wBestTime
+    elseif bestTimeType == "alltime" then
+      bestTime = boss.aBestTime
+    else
+      bestTime = boss.cBestTime
+    end
+
     objectiveStr = Util.formatObjectiveText(
       completionColor,
       boss.name,
       objectivesFormat,
       customObjectivesFormat,
       boss.time,
-      boss.cBestTime,
+      bestTime,
       objectiveOverTimeColor,
       objectiveUnderTimeColor
     )

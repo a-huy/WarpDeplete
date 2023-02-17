@@ -121,7 +121,9 @@ local defaults = {
     verticalOffset = 2,
 
     -- Utility options
-    insertKeystoneAutomatically = true
+    insertKeystoneAutomatically = true,
+    minLevelStoreRecord = 2,
+    maxLevelStoreRecord = 35,
   }
 }
 
@@ -716,6 +718,9 @@ function WarpDeplete:InitOptions()
             set = function(info, value) WarpDeplete.db.profile.recordDiffType = value end,
             width = 3 / 2,
           },
+          lineBreak(),
+          range(L["Min key level to store objective records"], "minLevelStoreRecord", "UpdateLayout", { width = "full", min = 2, max = 35 }),
+          range(L["Max key level to store objective records"], "maxLevelStoreRecord", "UpdateLayout", { width = "full", min = 2, max = 35 }),
           {
             type = "execute",
             name = L["Delete All Records"],
@@ -723,7 +728,7 @@ function WarpDeplete:InitOptions()
             confirm = true,
             confirmText = L["Really delete all records? This cannot be undone."],
             func = function() WarpDeplete.db.global.bestTimes = {} end
-          }
+          },
         }),
         group(L["Colors"], true, {
           color(L["Over time color"], "objectiveOverTimeColor", "UpdateObjectivesDisplay"),

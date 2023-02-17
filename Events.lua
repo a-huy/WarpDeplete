@@ -196,6 +196,55 @@ function WarpDeplete:GetEnemyForcesCount()
   return currentCount, totalCount
 end
 
+function WarpDeplete:OnCompleteForces()
+  self.forcesState.completed = true
+  self.forcesState.completedTime = self.timerState.current
+
+  local level = self.keyDetailsState.level
+  local affixes = self.keyDetailsState.affixes
+  local weeklyAffix = { affixes[1] }
+  local objName = "Enemy Forces"
+
+  -- Check record for affix combo
+  local cPrevBestTime = self:UpdateRecordForObjective(
+    level,
+    affixes,
+    objName,
+    -1,
+    self.forcesState.cBestTime,
+    self.forcesState.completedTime
+  )
+  if cPrevBestTime then
+    self.forcesState.cBestTime = cPrevBestTime
+  end
+
+  -- Check record for weekly affix (fort / tyr)
+  local wPrevBestTime = self:UpdateRecordForObjective(
+    level,
+    weeklyAffix,
+    objName,
+    -1,
+    self.forcesState.wBestTime,
+    self.forcesState.completedTime
+  )
+  if wPrevBestTime then
+    self.forcesState.wBestTime = wPrevBestTime
+  end
+
+  -- Check records for all time
+  local aPrevBestTime = self:UpdateRecordForObjective(
+    level,
+    { "AllTime" },
+    objName,
+    -1,
+    self.forcesState.aBestTime,
+    self.forcesState.completedTime
+  )
+  if aPrevBestTime then
+    self.forcesState.aBestTime = aPrevBestTime
+  end
+end
+
 function WarpDeplete:UpdateForces()
   if not self.challengeState.inChallenge then return end
 
@@ -207,8 +256,7 @@ function WarpDeplete:UpdateForces()
 
   if currentCount >= self.forcesState.totalCount and not self.forcesState.completed then
     -- If we just went above the total count (or matched it), we completed it just now
-    self.forcesState.completed = true
-    self.forcesState.completedTime = self.timerState.current
+    self:OnCompleteForces()
   end
 
   self:SetForcesCurrent(currentCount)
@@ -219,10 +267,9 @@ function WarpDeplete:UpdateObjectives()
 
   local objectives = Util.copy(self.objectivesState)
   local changed = false
-
-  level = self.keyDetailsState.level
-  affixes = self.keyDetailsState.affixes
-  weeklyAffix = { affixes[1] }
+  local level = self.keyDetailsState.level
+  local affixes = self.keyDetailsState.affixes
+  local weeklyAffix = { affixes[1] }
 
   local stepCount = select(3, C_Scenario.GetStepInfo())
   for i = 1, stepCount - 1 do
@@ -230,49 +277,55 @@ function WarpDeplete:UpdateObjectives()
       -- If it wasn't completed before and it is now, we've just completed
       -- it and can set the completion time
       local isCompleted = select(3, C_Scenario.GetCriteriaInfo(i))
+
       local orderNum = self:GetNumCompletedObjectives(objectives) + 1
       if isCompleted then
         objectives[i].time = self.timerState.current
         objectives[i].order = orderNum
-
-        -- Check record for affix combo
-        local cPrevBestTime = WarpDeplete:UpdateRecordForObjective(
-          level,
-          affixes,
-          objectives[i].name,
-          orderNum, objectives[i].cBestTime,
-          objectives[i].time
-        )
-        if cPrevBestTime then
-          objectives[i].cBestTime = cPrevBestTime
-        end
-
-        -- Check record for weekly affix (fort / tyr)
-        local wPrevBestTime = WarpDeplete:UpdateRecordForObjective(
-          level,
-          weeklyAffix,
-          objectives[i].name,
-          orderNum, objectives[i].wBestTime,
-          objectives[i].time
-        )
-        if wPrevBestTime then
-          objectives[i].wBestTime = wPrevBestTime
-        end
-
-        -- Check records for all time
-        local aPrevBestTime = WarpDeplete:UpdateRecordForObjective(
-          level,
-          { "AllTime" },
-          objectives[i].name,
-          orderNum, objectives[i].aBestTime,
-          objectives[i].time
-        )
-        if aPrevBestTime then
-          objectives[i].aBestTime = aPrevBestTime
-        end
-
         changed = true
+
+        if self:ShouldStoreRecord(level) then
+          -- Check record for affix combo
+          local cPrevBestTime = self:UpdateRecordForObjective(
+            level,
+            affixes,
+            objectives[i].name,
+            orderNum,
+            objectives[i].cBestTime,
+            objectives[i].time
+          )
+          if cPrevBestTime then
+            objectives[i].cBestTime = cPrevBestTime
+          end
+
+          -- Check record for weekly affix (fort / tyr)
+          local wPrevBestTime = self:UpdateRecordForObjective(
+            level,
+            weeklyAffix,
+            objectives[i].name,
+            orderNum,
+            objectives[i].wBestTime,
+            objectives[i].time
+          )
+          if wPrevBestTime then
+            objectives[i].wBestTime = wPrevBestTime
+          end
+
+          -- Check records for all time
+          local aPrevBestTime = self:UpdateRecordForObjective(
+            level,
+            { "AllTime" },
+            objectives[i].name,
+            orderNum,
+            objectives[i].aBestTime,
+            objectives[i].time
+          )
+          if aPrevBestTime then
+            objectives[i].aBestTime = aPrevBestTime
+          end
+        end
       end
+
     end
   end
 
