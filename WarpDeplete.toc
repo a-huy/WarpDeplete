@@ -1,4 +1,4 @@
-## Interface: 100002
+## Interface: 100005
 ## Title: WarpDeplete
 ## Notes-ruRU: WarpDeplete - таймер для подземелий М+ с гибкими настройками
 ## Author: Happens

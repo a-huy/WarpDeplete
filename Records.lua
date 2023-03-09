@@ -49,7 +49,7 @@ function WarpDeplete:UpdateRecordForObjective(level, affixes, name, order, curre
     order
   )
   if objectiveBestTime == nil or time < objectiveBestTime then
-    print(
+    self:PrintDebug(
       "Setting new best time for "
       .. level
       .. " "
