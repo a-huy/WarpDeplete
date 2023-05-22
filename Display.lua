@@ -445,12 +445,26 @@ function WarpDeplete:UpdateTimerDisplay()
   state.timerText = Util.formatTime_OnUpdate(self.timerState.current) ..
     " / " .. Util.formatTime_OnUpdate(self.timerState.limit)
 
-  if self.challengeState.challengeCompleted and self.timerState.current <= self.timerState.limit then
-    state.timerText = "|c" .. state.successColor .. state.timerText .. "|r"
-  elseif self.challengeState.challengeCompleted and self.timerState.current > self.timerState.limit then
-    state.timerText = "|c" .. state.expiredColor .. state.timerText .. "|r"
-  end
 
+  if self.challengeState.challengeCompleted then
+    local blizzardTime = select(3, C_ChallengeMode.GetCompletionInfo())
+    local blizzardTimeText = ''
+    if self.db.profile.showMillisecondsWhenDungeonCompleted then
+      blizzardTimeText = Util.formatTimeMilliseconds(blizzardTime)
+    else
+      blizzardTimeText = Util.formatTime(blizzardTime/1000)
+    end
+
+    if self.timerState.current <= self.timerState.limit then
+      state.timerText =  blizzardTimeText ..
+              " / " .. Util.formatTime_OnUpdate(self.timerState.limit)
+      state.timerText = "|c" .. state.successColor .. state.timerText .. "|r"
+    elseif self.timerState.current > self.timerState.limit then
+      state.timerText =  blizzardTimeText ..
+              " / " .. Util.formatTime_OnUpdate(self.timerState.limit)
+      state.timerText = "|c" .. state.expiredColor .. state.timerText .. "|r"
+    end
+  end
   self.frames.root.timerText:SetText(state.timerText)
 
   for i = 1, 3 do
@@ -474,7 +488,6 @@ function WarpDeplete:UpdateTimerDisplay()
       else
         state.color = state.successColor
       end
-
       state.timeText = "|c" .. state.color .. state.timeText .. "|r"
     end
 
@@ -549,6 +562,59 @@ function WarpDeplete:UpdateForcesDisplay()
       self.forcesState.completed and self.forcesState.completedTime or nil
     )
   )
+  self:UpdateGlow() 
+end
+
+function WarpDeplete:UpdateGlowAppearance()
+  if not self.forcesState.glowActive then return end
+
+  -- LibCustomGlow doesn't let us change the glow properties
+  -- once it's running, so this is the easiest way. Pretty sure
+  -- everybody does this.
+  self:HideGlow()
+  self:ShowGlow()
+end
+  
+function WarpDeplete:UpdateGlow()
+  if self.forcesState.glowActive and (
+    self.challengeState.challengeCompleted or
+    self.forcesState.completed
+  ) then
+    self:HideGlow()
+  end
+
+  local percentBeforePull = self.forcesState.currentPercent
+  local percentAfterPull = percentBeforePull + self.forcesState.pullPercent
+  local shouldGlow = percentBeforePull < 1 and percentAfterPull >= 1.0
+
+  -- Already in the correct state
+  if shouldGlow == self.forcesState.glowActive then return end
+
+  if shouldGlow then self:ShowGlow()
+  else self:HideGlow() end
+end
+
+function WarpDeplete:ShowGlow()
+  self.forcesState.glowActive = true
+  local glowR, glowG, glowB = Util.hexToRGB(self.db.profile.forcesGlowColor)
+  self.Glow.PixelGlow_Start(
+    self.forces.bar, -- frame
+    {glowR, glowG, glowB, 1}, -- color
+    self.db.profile.forcesGlowLineCount, -- line count
+    self.db.profile.forcesGlowFrequency, -- frequency
+    self.db.profile.forcesGlowLength, -- length
+    self.db.profile.forcesGlowThickness, -- thiccness
+    1.5, -- x offset
+    1.5, -- y offset
+    false, -- draw border
+    "forcesComplete", -- tag
+    0 -- draw layer
+  )
+end
+
+function WarpDeplete:HideGlow()
+  self.forcesState.glowActive = false
+  self.Glow.PixelGlow_Stop(self.forces.bar, "forcesComplete")
 end
 
 -- Expect death count as number

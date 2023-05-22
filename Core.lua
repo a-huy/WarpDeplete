@@ -30,7 +30,7 @@ WarpDeplete.defaultForcesState = {
 
   pullPercent = 0,
   currentPercent = 0,
-
+  glowActive = false,
   currentPull = {},
 
   completed = false,
@@ -112,6 +112,18 @@ end
 function WarpDeplete:OnDisable()
 end
 
+function WarpDeplete:UpdateDemoModeForces()
+  if not self.challengeState.demoModeActive then return end
+
+  if self.db.profile.showForcesGlow and self.db.profile.demoForcesGlow then
+    self:SetForcesCurrent(92)
+    self:SetForcesPull(8)
+  else
+    self:SetForcesCurrent(34)
+    self:SetForcesPull(7)
+  end
+end
+
 function WarpDeplete:EnableDemoMode()
   if self.challengeState.inChallenge then
     self:Print(L["Can't enable demo mode while in an active challenge!"])
@@ -145,9 +157,9 @@ function WarpDeplete:EnableDemoMode()
 
   self:SetTimerLimit(35 * 60)
   self:SetTimerRemaining(20 * 60)
-  self:SetForcesCurrent(34)
-  self:SetForcesPull(7)
   self:SetDeaths(3)
+
+  self:UpdateDemoModeForces()
 
   local classTable = {
     "SHAMAN",
@@ -184,15 +196,18 @@ function WarpDeplete:DisableDemoMode()
   self:ResetState()
 end
 
-function WarpDeplete:Show()
-  self.isShown = true
-  self.frames.root:Show()
-  self:UpdateLayout()
-
-  ObjectiveTrackerFrame:Hide()
-  if KT ~= nil then
-    KT.frame:Hide()
+function WarpDeplete:ShowBlizzardObjectiveTracker()
+  -- As SylingTracker replaces the blizzard objective tracker in hiding
+  -- it, we prevent WarpDeplete to reshown the tracker.
+  if IsAddOnLoaded("SylingTracker") then 
+    return 
   end
+
+  ObjectiveTrackerFrame:Show()
+end
+
+function WarpDeplete:HideBlizzardObjectiveTracker()
+  ObjectiveTrackerFrame:Hide()
 
   -- Sometimes, the objective tracker isn't hidden
   -- correctly. This can happen when WarpDeplete is
@@ -211,15 +226,35 @@ function WarpDeplete:Show()
   end)
 end
 
+function WarpDeplete:ShowExternals()
+  if KT ~= nil then
+    KT.frame:Show()
+  end
+end
+
+function WarpDeplete:HideExternals()
+  if KT ~= nil then
+    KT.frame:Hide()
+  end
+end
+
+function WarpDeplete:Show()
+  self.isShown = true
+  self.frames.root:Show()
+  self:UpdateLayout()
+
+  self:HideBlizzardObjectiveTracker()
+  self:HideExternals()
+end
+
 function WarpDeplete:Hide()
   self.isShown = false
   self.frames.root:Hide()
 
-  if KT ~= nil then
-    KT.frame:Show()
-  end
-  ObjectiveTrackerFrame:Show()
+  self:ShowBlizzardObjectiveTracker()
+  self:ShowExternals()
 end
+
 
 function WarpDeplete:ResetState()
   self:PrintDebug("Resetting state")
